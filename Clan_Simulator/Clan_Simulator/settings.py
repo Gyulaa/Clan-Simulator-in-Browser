@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Clan_Simulator_Böngészőben',
+    'Clan_Simulator_Browser',
 ]
 
 MIDDLEWARE = [
