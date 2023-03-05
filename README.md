@@ -1,10 +1,4 @@
-
-**Table of Contents**
-
-[TOCM]
-
-[TOC]
-
+# Clan Simulator
 ## Setup
 ### Requirements
 - #### You need python that you can download from [here](https://www.python.org/downloads/ "here").
@@ -13,34 +7,41 @@
 
 ### Setup the project
 - #### Clone the repository
-``` git
-git clone https://github.com/Gyulaa/Clan-Simulator-in-Browser.gitgit clone https://github.com/Gyulaa/Clan-Simulator-in-Browser.git```
+<pre>
+git clone https://github.com/Gyulaa/Clan-Simulator-in-Browser.gitgit clone https://github.com/Gyulaa/Clan-Simulator-in-Browser.git
+</pre>
 
 - #### Navigate to the project directory
-``` terminal
-cd Clan-Simulator-in-Browser```
+<pre>
+cd Clan-Simulator-in-Browser
+</pre>
 
 - #### Create and activate a virtual environment
-``` terminal
+<pre>
 virtualenv env
-env\Scripts\activate```
+env\Scripts\activate
+</pre>
 
 - #### Install project dependencies
-``` terminal
-pip install -r requirements.txt```
+<pre>
+pip install -r requirements.txt
+</pre>
 
 - #### Create a superuser for Django admin
-``` terminal
+<pre>
 cd Clan_Simulator
-python manage.py createsuperuser```
+python manage.py createsuperuser
+</pre>
 
 - #### Apply database migrations
-``` terminal
-python manage.py migrate```
+<pre>
+python manage.py migrate
+</pre>
 
 - #### Run the development server
-``` terminal 
-python manage.py runserver```
+<pre>
+python manage.py runserver
+</pre>
 
 ## Usage
 - #### Open a web browser and go to `http://localhost:8000` to view the app.
