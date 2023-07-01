@@ -48,7 +48,7 @@
         .box {
         display: flex;
         flex-direction: column;
-        position: absolute;
+        position: fixed;
         top: 8%;
         right: 0%;
         height: 100vh;
@@ -86,6 +86,8 @@
 
         /* link-... */
         .link-1 {
+        display: block;
+        margin-bottom: 1rem;
         font-size: 1.8rem;
 
         color: var(--light);
@@ -124,12 +126,20 @@
       </div>
     </div>
   </nav>
-  <!-- Add member button -->
-  <div class="box">
-      <a href="{% url 'add_member' %}" style="color: #f2d9d9" class="link-1" id="m1-c">New member</a>
-  </div>
+<!-- Add member button -->
+<div class="box">
+  <a href="{% url 'add_member' %}" style="color: #f2d9d9" class="link-1" id="m1-c">New Member</a>
+</div>
+<!-- Next turn button -->
+<div class="box" style="top: 20%">
+  <a href="{% url 'update_members' %}" style="color: #f2d9d9" class="link-1" id="m1-c">Next Turn</a>
+</div>
+<!-- Reset Game -->
+<div class="box" style="top: 80%">
+  <a href="{% url 'reset_game' %}" style="color: #f2d9d9" class="link-1" id="m1-c">Reset Game</a>
+</div>
     <!-- table that shows family members -->
-    <table class="table shadow" style="width: 80%; text-align: center; position: absolute; right: 19%; top: 8%; background-color: B8B9BF; radius: 2px"; >
+    <table class="table shadow" style="width: 75%; text-align: center; position: absolute; right: 23%; top: 8%; background-color: B8B9BF; radius: 2px"; >
       <!-- the head of the table -->
       <thead>
           <tr style="background-color: #B8B9BF;">
@@ -137,6 +147,8 @@
               <th>Name</th>
               <th>Vitality</th>
               <th>Resilience</th>
+              <th>Health</th>
+              <th>Age</th>
               <th>Possible Child Number</th>
               <th>Child Number</th>
               <th>Position</th>
@@ -155,6 +167,8 @@
                     <td>{{ member.name }}</td>
                     <td>{{ member.vitality }}</td>
                     <td>{{ member.resilience }}</td>
+                    <td>{{ member.health }}</td>
+                    <td>{{ member.age }}</td>
                     <td>{{ member.pcn }}</td>
                     <td>{{ member.childnumber }}</td>
                     <td>{{ member.position }}</td>
@@ -168,6 +182,8 @@
                     <td>{{ member.name }}</td>
                     <td>{{ member.vitality }}</td>
                     <td>{{ member.resilience }}</td>
+                    <td>{{ member.health }}</td>
+                    <td>{{ member.age }}</td>
                     <td>{{ member.pcn }}</td>
                     <td>{{ member.childnumber }}</td>
                     <td>{{ member.position }}</td>

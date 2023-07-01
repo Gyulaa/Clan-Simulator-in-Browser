@@ -10,7 +10,7 @@ def overview(request):
     # If there is no members in the database, it creates a genesis member
     member_count = Member.objects.count()
     if member_count == 0:
-        genesis_member = Member(name='Genesis', vitality=15, resilience=15, pcn=2, childnumber=0,
+        genesis_member = Member(name='Genesis', vitality=15, resilience=15, health=100, age=2, pcn=3, childnumber=0,
                                 position='Pawn', balance=500, alive=True, fatherid=0)
         genesis_member.save()
     _members = Member.objects.all()
@@ -18,6 +18,12 @@ def overview(request):
 
 # function for operations.html
 def operations(request):
+    # If there is no members in the database, it creates a genesis member
+    member_count = Member.objects.count()
+    if member_count == 0:
+        genesis_member = Member(name='Genesis', vitality=15, resilience=15, health=100, age=2, pcn=3, childnumber=0,
+                                position='Pawn', balance=500, alive=True, fatherid=0)
+        genesis_member.save()
     _members = Member.objects.all()
     return render(request, 'operations.html', {"members": _members})
 
@@ -33,22 +39,196 @@ def add_member(request):
             father = Member.objects.get(id=fatherid)
             fathervitality = father.vitality
             fatherresilience = father.resilience
+            fatherage = father.age
             fatherpcn = father.pcn
             fatherposition = father.position
             fatherchildnumber = father.childnumber
-            # if the father reached his child limit it gives an error
-            if not fatherpcn == fatherchildnumber:
-                # it create the new member
-                member = Member(name=name, vitality=fathervitality + random.randint(-5, 5),
-                                resilience=fatherresilience + random.randint(-5, 5),
-                                pcn=fatherpcn + random.randint(-1, 1),
-                                childnumber=0, position=fatherposition, balance=0, alive=True, fatherid=fatherid)
-                member.save()
-                # update childnumber for father
-                Member.objects.filter(id=fatherid).update(childnumber=fatherchildnumber + 1)
+            fatheralive = father.alive
+            if fatheralive == True:
+                if fatherage > 1:
+                    if not fatherpcn == fatherchildnumber:
+                        #mutation in vitality
+                        childrenvitality = fathervitality + random.randint(-5, 5)
+                        #max value: 100
+                        if childrenvitality > 100:
+                            childrenvitality = 100
+                        #mutation in resilience
+                        childrenresilience = fatherresilience + random.randint(-5, 5)
+                        #max value: 100
+                        if childrenresilience > 100:
+                            childrenresilience = 100
+                        # mutation in the possible child number
+                        childrenpcn = fatherpcn + random.randint(-5, 5)
+                        #max value: 100
+                        if childrenpcn > 100:
+                            childrenpcn = 100
+                        # it creates the new member
+                        member = Member(name=name, vitality=childrenvitality,
+                                        resilience=childrenresilience,
+                                        pcn=childrenpcn,
+                                        childnumber=0, position=fatherposition, balance=50, alive=True, fatherid=fatherid)
+                        member.save()
+                        # update childnumber for father
+                        Member.objects.filter(id=fatherid).update(childnumber=fatherchildnumber + 1)        
+                    # if the father reached his child limit it gives an error
+                    else:
+                        return JsonResponse({'error': 'This person has reached the child limit.'})
+                else:
+                    return JsonResponse({'error': 'This person is too young.'})
             else:
-                return JsonResponse({'error': 'This person has reached the child limit.'})
+                return JsonResponse({'error': 'This person has died.'})
             return redirect('operations')
     else:
         form = AddMemberForm()
     return render(request, 'add_member.html', {'form': form})
+
+
+# function for age increment and health decrement
+def update_members(request):
+    # Get all members from the database
+    members = Member.objects.all()
+    # Loop through each member and update values
+    for member in members:
+        if member.alive == True:
+            # income based on vitality
+            if member.age > 1:
+                member.balance += member.vitality * 10
+                # income based on ranks: peasant, citizen, baron, count, king
+                if member.position == "Pawn":
+                    member.balance -= 50
+                elif member.position == "Baron":
+                    member.balance += 100
+                elif member.position == "Count":
+                    member.balance += 200
+                elif member.position == "King":
+                    member.balance += 500
+                # promotion
+                if member.balance > 5000:
+                    member.position = "King"
+                elif member.balance > 2000:
+                    member.position = "Count"
+                elif member.balance > 1000:
+                    member.position = "Baron"
+                elif member.balance > 500:
+                    member.postion = "Citizen"
+                else:
+                    member.position = "Pawn"
+            # family expenses
+            member.balance -= member.childnumber * 50
+            # member getting older
+            member.age += 1
+            # members health
+            if member.age < 2:
+                if len(members) > 3:
+                    member.health -= 1250 / member.resilience + random.randint(-30, 30)
+                else:
+                    member.health -= 500 / member.resilience + random.randint(-30, 30)
+            elif member.age > 4:
+                member.health -= 1000 / member.resilience + random.randint(-40, 40)
+            else:
+                member.health -= 750 / member.resilience + random.randint(-30, 30)
+            # dying by health
+            if member.health <= 0:
+                member.alive = False
+                member.health = -1
+                sons = Member.objects.filter(fatherid=member.id)
+                for son in sons:
+                    if son.age < 2:
+                        son.alive = False
+                        son.health = -1
+                        son.balance = -1
+                        son.save()
+            # dying by bankruptcy
+            if member.age > 1:
+                if member.balance < 1:
+                    member.alive = False
+                    member.balance=-1
+                sons = Member.objects.filter(fatherid=member.id)
+                for son in sons:
+                    if son.age < 2:
+                        son.alive = False
+                        son.balance = -1
+                        son.health = -1
+                        son.save()
+            member.save()
+    for member in members:
+        if member.alive == False:
+        # Inherit wealth
+            if member.balance > 0:
+                sons = []
+                grandsons = []
+                brothers = []
+                sonsofbro = []
+                alive = []
+
+                for competitor in members:
+                    # make sure not the same person
+                    if competitor.id != member.id:
+                        # children of member
+                        if competitor.fatherid == member.id:
+                            #children is alive?
+                            if competitor.alive == True:
+                                #append son's id
+                                sons.append(competitor.id)
+                            else:
+                                for grandcompetitor in members:
+                                    if grandcompetitor.fatherid == competitor.id:
+                                        if grandcompetitor.alive==True:
+                                            grandsons.append(grandcompetitor.id)
+                        #brothers
+                        elif competitor.fatherid == member.fatherid:
+                            if competitor.alive == True:
+                                brothers.append(competitor.id)
+                            else:
+                                for grandcompetitor in members:
+                                    if grandcompetitor.fatherid == competitor.id:
+                                        if grandcompetitor.alive==True:
+                                            sonsofbro.append(grandcompetitor.id)
+                        else:
+                            if competitor.alive == True:
+                                alive.append(competitor.id)
+                #possible outcomes
+                if len(sons) > 0:
+                    inheritance_value = member.balance / len(sons)
+                    for heir in members:
+                        if heir.id in sons:
+                            heir.balance += inheritance_value
+                            member.balance = 0
+                            heir.save()
+                elif len(grandsons) > 0:
+                    inheritance_value = member.balance / len(grandsons)
+                    for heir in members:
+                        if heir.id in grandsons:
+                            heir.balance += inheritance_value
+                            member.balance = 0
+                            heir.save()
+                elif len(brothers) > 0:
+                    inheritance_value = member.balance / len(brothers)
+                    for heir in members:
+                        if heir.id in brothers:
+                            heir.balance += inheritance_value
+                            member.balance = 0
+                            heir.save()
+                elif len(sonsofbro) > 0:
+                    inheritance_value = member.balance / len(sonsofbro)
+                    for heir in members:
+                        if heir.id in sonsofbro:
+                            heir.balance += inheritance_value
+                            member.balance = 0
+                            heir.save()
+                else:
+                    inheritance_value = member.balance / len(alive)
+                    for heir in members:
+                        if heir.id in alive:
+                            heir.balance += inheritance_value
+                            member.balance = 0
+                            heir.save()
+                        
+                member.save()
+    return redirect('operations')
+
+def reset_game(request):
+    # Törölje az összes személy rekordot
+    Member.objects.all().delete()
+    # Egyéb inicializálási lépések, ha szükséges
+    return redirect('operations')
