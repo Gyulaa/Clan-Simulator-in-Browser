@@ -4,6 +4,7 @@ from django.http import JsonResponse
 import random
 from .forms import AddMemberForm
 from . models import Member
+import json
 
 # function for overview.html
 def overview(request):
@@ -14,6 +15,7 @@ def overview(request):
                                 position='Pawn', balance=500, alive=True, fatherid=0)
         genesis_member.save()
     _members = Member.objects.all()
+
     return render(request, 'overview.html', {"members": _members})
 
 # function for operations.html
@@ -26,6 +28,35 @@ def operations(request):
         genesis_member.save()
     _members = Member.objects.all()
     return render(request, 'operations.html', {"members": _members})
+
+#family tree
+def render_family_tree(member, members, generation):
+    descendants = members.filter(fatherid=member.id)
+    
+    # Az examinee if the member is alive
+    alive_text = "(Alive)" if member.alive else "(Deceased)"
+    #generate indentation
+    html = f'<li style="margin-left: {generation*6}px">'
+    html += f'<span class="caret { "deceased" if not member.alive else "" }">{member.name}  - ID: {member.id}</span>'
+    
+    if descendants:
+        html += '<ul class="nested">'
+        for descendant in descendants:
+            html += render_family_tree(descendant, members, generation+1)
+        html += '</ul>'
+        
+    html += '</li>'
+    return html
+
+#function for family_tree.html
+def family_tree(request):
+    members = Member.objects.all()
+    tree_html = ''
+
+    for member in members.filter(fatherid=0):
+        tree_html += render_family_tree(member, members, 0)
+
+    return render(request, 'family_tree.html', {'tree_html': tree_html})
 
 # function for add_member.html
 def add_member(request):
@@ -49,19 +80,28 @@ def add_member(request):
                     if not fatherpcn == fatherchildnumber:
                         #mutation in vitality
                         childrenvitality = fathervitality + random.randint(-5, 5)
+                        #min value: 0
+                        if childrenvitality < 0:
+                            childrenvitality = 0
                         #max value: 100
                         if childrenvitality > 100:
                             childrenvitality = 100
                         #mutation in resilience
                         childrenresilience = fatherresilience + random.randint(-5, 5)
+                        #min value: 0
+                        if childrenresilience < 0:
+                            childrenresilience = 0
                         #max value: 100
                         if childrenresilience > 100:
                             childrenresilience = 100
                         # mutation in the possible child number
-                        childrenpcn = fatherpcn + random.randint(-5, 5)
+                        childrenpcn = fatherpcn + random.randint(-1, 1)
+                        #min value: 0
+                        if childrenpcn < 0:
+                            childrenpcn = 0
                         #max value: 100
-                        if childrenpcn > 100:
-                            childrenpcn = 100
+                        if childrenpcn > 5:
+                            childrenpcn = 5
                         # it creates the new member
                         member = Member(name=name, vitality=childrenvitality,
                                         resilience=childrenresilience,
@@ -114,11 +154,15 @@ def update_members(request):
                 else:
                     member.position = "Pawn"
             # family expenses
-            member.balance -= member.childnumber * 50
+            member.balance -= member.childnumber * 100
             # member getting older
             member.age += 1
             # members health
             if member.age < 2:
+                childhoodIllness = random.randint(1, 4)
+                if childhoodIllness == 4:
+                    member.health = -1
+                    member.alive = False
                 if len(members) > 3:
                     member.health -= 1250 / member.resilience + random.randint(-30, 30)
                 else:
@@ -217,13 +261,13 @@ def update_members(request):
                             member.balance = 0
                             heir.save()
                 else:
-                    inheritance_value = member.balance / len(alive)
-                    for heir in members:
-                        if heir.id in alive:
-                            heir.balance += inheritance_value
-                            member.balance = 0
-                            heir.save()
-                        
+                    if len(alive) > 0:
+                        inheritance_value = member.balance / len(alive)
+                        for heir in members:
+                            if heir.id in alive:
+                                heir.balance += inheritance_value
+                                member.balance = 0
+                                heir.save()
                 member.save()
     return redirect('operations')
 
